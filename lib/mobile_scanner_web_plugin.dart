@@ -167,7 +167,7 @@ class MobileScannerWebPlugin {
   Future<void> cancel() async {
     try {
       // Stop the camera stream
-      _localStream?.getTracks().forEach((track) {
+      _localStream!.getTracks().forEach((track) {
         if (track.readyState == 'live') {
           track.stop();
         }
