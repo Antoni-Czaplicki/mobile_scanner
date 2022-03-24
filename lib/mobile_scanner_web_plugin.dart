@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_web_plugins/flutter_web_plugins.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:mobile_scanner/src/web/jsqr.dart';
+import 'package:rxdart/rxdart.dart';
 import 'dart:html' as html;
 import 'dart:ui' as ui;
 
@@ -30,7 +31,7 @@ class MobileScannerWebPlugin {
   }
 
   // Controller to send events back to the framework
-  StreamController controller = StreamController();
+  StreamController controller = BehaviorSubject();
 
   // The video stream. Will be initialized later to see which camera needs to be used.
   html.MediaStream? _localStream;
@@ -80,8 +81,9 @@ class MobileScannerWebPlugin {
   Future<Map> _start(arguments) async {
     vidDiv.children = [video];
 
-    final CameraFacing cameraFacing =
-        arguments['cameraFacing'] ?? CameraFacing.front;
+    var cameraFacing = CameraFacing.front;
+    if (arguments.containsKey('facing'))
+      cameraFacing = CameraFacing.values[arguments['facing']];
 
     // See https://github.com/flutter/flutter/issues/41563
     // ignore: UNDEFINED_PREFIXED_NAME
@@ -105,13 +107,12 @@ class MobileScannerWebPlugin {
       Map? capabilities =
           html.window.navigator.mediaDevices?.getSupportedConstraints();
       if (capabilities != null && capabilities['facingMode']) {
-        UserMediaOptions constraints = UserMediaOptions(
-            video: VideoOptions(
+        var constraints = VideoOptions(
           facingMode:
               (cameraFacing == CameraFacing.front ? 'user' : 'environment'),
           width: {'ideal': 4096},
           height: {'ideal': 2160},
-        ));
+        );
 
         _localStream =
             await html.window.navigator.getUserMedia(video: constraints);
@@ -146,7 +147,7 @@ class MobileScannerWebPlugin {
         'torchable': hasFlash
       };
     } catch (e) {
-      throw PlatformException(code: 'MobileScannerWeb', message: e.toString());
+      throw PlatformException(code: 'MobileScannerWeb', message: '$e');
     }
   }
 
@@ -166,7 +167,7 @@ class MobileScannerWebPlugin {
   Future<void> cancel() async {
     try {
       // Stop the camera stream
-      _localStream!.getTracks().forEach((track) {
+      _localStream?.getTracks().forEach((track) {
         if (track.readyState == 'live') {
           track.stop();
         }
