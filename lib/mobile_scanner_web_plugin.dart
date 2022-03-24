@@ -81,9 +81,8 @@ class MobileScannerWebPlugin {
   Future<Map> _start(arguments) async {
     vidDiv.children = [video];
 
-    var cameraFacing = CameraFacing.front;
-    if (arguments.containsKey('facing'))
-      cameraFacing = CameraFacing.values[arguments['facing']];
+    final CameraFacing cameraFacing =
+        arguments['cameraFacing'] ?? CameraFacing.front;
 
     // See https://github.com/flutter/flutter/issues/41563
     // ignore: UNDEFINED_PREFIXED_NAME
@@ -107,12 +106,13 @@ class MobileScannerWebPlugin {
       Map? capabilities =
           html.window.navigator.mediaDevices?.getSupportedConstraints();
       if (capabilities != null && capabilities['facingMode']) {
-        var constraints = VideoOptions(
+        UserMediaOptions constraints = UserMediaOptions(
+            video: VideoOptions(
           facingMode:
               (cameraFacing == CameraFacing.front ? 'user' : 'environment'),
           width: {'ideal': 4096},
           height: {'ideal': 2160},
-        );
+        ));
 
         _localStream =
             await html.window.navigator.getUserMedia(video: constraints);
@@ -147,7 +147,7 @@ class MobileScannerWebPlugin {
         'torchable': hasFlash
       };
     } catch (e) {
-      throw PlatformException(code: 'MobileScannerWeb', message: '$e');
+      throw PlatformException(code: 'MobileScannerWeb', message: e.toString());
     }
   }
 
